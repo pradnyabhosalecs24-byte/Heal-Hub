@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "558148809593",
+    "project_id": "heal-hub-309ad",
+    "storage_bucket": "heal-hub-309ad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:558148809593:android:700dd5e9cad6517502f5a8",
+        "android_client_info": {
+          "package_name": "com.healhub.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1GbOdRyBkvj40oPLs6727yIqHMUOg4d8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

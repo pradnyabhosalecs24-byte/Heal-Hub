@@ -16,15 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check Firebase config secret
+      - name: Firebase config (secret overrides committed file)
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          if [ -z "$GOOGLE_SERVICES_JSON" ]; then
-            echo "::error::Add repository secret GOOGLE_SERVICES_JSON (contents of google-services.json). See docs/SETUP.md section 7."
-            exit 1
-          fi
-          printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json; fi
+          test -f android/app/google-services.json || { echo "::error::mobile/android/app/google-services.json missing"; exit 1; }
 
       - uses: actions/setup-node@v4
         with:
