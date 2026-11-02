@@ -1,0 +1,11 @@
+node_modules/
+.env
+*.log
+.DS_Store
+# Firebase / signing secrets – never commit
+google-services.json
+GoogleService-Info.plist
+serviceAccount*.json
+*.keystore
+!mobile/android/app/debug.keystore
+keystore.properties

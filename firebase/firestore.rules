@@ -1,0 +1,56 @@
+rules_version = '2';
+// HEALHUB Firestore security rules – Stage 1 (accounts, patients, doctors, emergency contacts).
+// Later stages ADD match blocks; everything not matched is denied.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
+    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
+    function verified() { return signedIn() && request.auth.token.email_verified == true; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // Account + role. Users may only pick patient/doctor; admin comes from a custom claim.
+    match /users/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow create: if isSelf(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.role in ['patient', 'doctor'];
+      allow update: if isSelf(uid) && !changed().hasAny(['uid', 'role', 'createdAt']);
+      allow delete: if false;
+    }
+
+    // Patient profile: private to the patient. Admins are intentionally NOT granted access
+    // to medical data. Doctor access is added in Stage 3 (only for their own appointments).
+    match /patients/{uid} {
+      allow read: if isSelf(uid);
+      allow create: if isSelf(uid) && request.resource.data.uid == uid;
+      allow update: if isSelf(uid) && !changed().hasAny(['uid', 'patientId', 'createdAt']);
+      allow delete: if false;
+    }
+
+    // Doctor profile: public (to signed-in users) only once verified by an admin.
+    match /doctors/{uid} {
+      allow read: if isSelf(uid) || isAdmin() || (signedIn() && resource.data.verified == true);
+      allow create: if isSelf(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.verified == false
+        && request.resource.data.verificationStatus == 'pending';
+      allow update: if (isSelf(uid) && verified()
+          && !changed().hasAny(['uid', 'verified', 'verificationStatus', 'verifiedBy', 'verifiedAt', 'ratingAvg', 'ratingCount']))
+        || (isAdmin() && changed().hasOnly(['verified', 'verificationStatus', 'verificationNote', 'verifiedBy', 'verifiedAt', 'updatedAt']));
+      allow delete: if false;
+    }
+
+    match /emergency_contacts/{id} {
+      allow read, delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if signedIn() && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == request.auth.uid;
+    }
+
+    // Reference data managed by admins.
+    match /departments/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /hospital/{id}    { allow read: if true;       allow write: if isAdmin(); }
+  }
+}
